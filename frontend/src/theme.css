@@ -1,0 +1,21 @@
+:root { --pl-purple: #38003c; --pl-green: #00ff85; --pl-cyan: #04f5ff; --pl-magenta: #e90052; }
+
+html, body { background: #14001a; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-image:
+    radial-gradient(900px 480px at 85% -8%, rgba(233, 0, 82, .18), transparent 60%),
+    radial-gradient(800px 420px at 0% 0%, rgba(4, 245, 255, .08), transparent 55%),
+    repeating-linear-gradient(90deg, rgba(0, 255, 133, .018) 0 90px, transparent 90px 180px);
+  background-attachment: fixed;
+}
+h1, h2, h3 { font-family: 'Barlow Condensed', 'Inter', sans-serif; text-transform: uppercase; letter-spacing: .04em; }
+h1 { font-weight: 800; font-style: italic; }
+header {
+  background: linear-gradient(90deg, #38003c 0%, #4b0a54 55%, #38003c 100%) !important;
+  border-bottom: 3px solid var(--pl-green) !important;
+}
+.hero { border-top: 4px solid var(--pl-green); background: linear-gradient(135deg, rgba(56, 0, 60, .85), rgba(35, 0, 41, .9)) !important; }
+.pitch-bg { background-image: repeating-linear-gradient(180deg, rgba(255, 255, 255, .05) 0 36px, transparent 36px 72px); }
+::-webkit-scrollbar { width: 8px; height: 8px }
+::-webkit-scrollbar-thumb { background: #52275f; border-radius: 8px }
