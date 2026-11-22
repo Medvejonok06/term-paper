@@ -88,7 +88,7 @@ def sync(from_year: int, to_year: int) -> None:
             df = download(year)
             if df is None:
                 continue
-            label, added = f"{year}/{(year + 1) % 100:02d}", 0
+                label, added = f"{year % 100:02d}{(year + 1) % 100:02d}", 0
             for r in df.to_dict("records"):
                 for name in (r["HomeTeam"], r["AwayTeam"]):
                     if name not in teams:

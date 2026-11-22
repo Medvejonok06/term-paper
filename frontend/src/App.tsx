@@ -239,18 +239,23 @@ function ScoreList({ p }: { p: Prediction }) {
   const max = p.exact_scores[0]?.prob || 1;
   return (
     <div className={`${card} p-5`}>
-      <h3 className="text-sm font-bold text-[#f5eff9] mb-4 flex items-center gap-2">
+      <h3 className="text-sm font-bold text-slate-100 mb-1 flex items-center gap-2">
         <Award className="w-4 h-4 text-amber-400" /> Найімовірніші рахунки
       </h3>
+      <p className="text-[11px] text-slate-400 mb-4 leading-relaxed">
+        Для прогнозованого результату ({OUTCOME[p.predicted_class].short}) найімовірніший рахунок:{' '}
+        <span className="font-mono font-bold text-white">{p.likely_score}</span>. Окремий рахунок майже завжди
+        малоймовірний, а ймовірність перемоги — це сума багатьох рахунків.
+      </p>
       <div className="space-y-2.5">
         {p.exact_scores.map((s, idx) => (
           <div key={s.score}>
             <div className="flex justify-between text-xs mb-1">
-              <span className={idx === 0 ? 'font-mono font-bold text-white' : 'font-mono text-[#d5c8dc]'}>{s.score}</span>
-              <span className="font-mono text-[#b9a5c3]">{pct(s.prob)}</span>
+              <span className={idx === 0 ? 'font-mono font-bold text-white' : 'font-mono text-slate-300'}>{s.score}</span>
+              <span className="font-mono text-slate-400">{pct(s.prob)}</span>
             </div>
-            <div className="h-1.5 bg-[#14001a] rounded-full overflow-hidden">
-              <div className="h-full bg-[#ff2e7e] rounded-full" style={{ width: `${(s.prob / max) * 100}%` }} />
+            <div className="h-1.5 bg-slate-950 rounded-full overflow-hidden">
+              <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${(s.prob / max) * 100}%` }} />
             </div>
           </div>
         ))}
@@ -305,25 +310,25 @@ function PredictionView({ p }: { p: Prediction }) {
   return (
     <div className="space-y-6">
       <div className={`${card} hero p-6`}>
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 mb-5 border-b border-slate-800">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 mb-5 border-b border-[#3a1245]">
           <div>
-            <div className="text-[11px] text-slate-500 font-mono mb-2">
+            <div className="text-[11px] text-[#9a82a5] font-mono mb-2">
               {p.model_used === 'market' ? 'Модель з коефіцієнтами ринку' : 'Модель на основі форми, Elo та xG'}
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <TeamBadge src={p.home_context.crest} name={p.home_team} size={48} />
               <h2 className="text-3xl font-extrabold text-white">
-                {p.home_team} <span className="text-slate-500 text-lg font-normal">vs</span> {p.away_team}
+                {p.home_team} <span className="text-[#9a82a5] text-lg font-normal">vs</span> {p.away_team}
               </h2>
               <TeamBadge src={p.away_context.crest} name={p.away_team} size={48} />
             </div>
           </div>
           <div className={`rounded-xl px-4 py-2.5 border ${s.box}`}>
-            <div className="text-[10px] uppercase tracking-wider text-slate-400">Прогноз моделі</div>
+            <div className="text-[10px] uppercase tracking-wider text-[#b9a5c3]">Прогноз моделі</div>
             <div className={`text-sm font-bold flex items-center gap-1.5 ${s.text}`}>
               <CheckCircle2 className="w-4 h-4" /> {p.predicted_outcome}
             </div>
-            <div className="text-[10px] text-slate-500 mt-0.5">впевненість {pct(confidence, 0)}</div>
+            <div className="text-[10px] text-[#9a82a5] mt-0.5">впевненість {pct(confidence, 0)}</div>
           </div>
         </div>
 
@@ -342,14 +347,14 @@ function PredictionView({ p }: { p: Prediction }) {
           </div>
         )}
         {p.adjustment && p.base_probs && (
-          <div className="mb-5 rounded-xl px-4 py-2.5 text-[11px] border border-slate-800 bg-slate-950/50 text-slate-400 leading-relaxed">
+          <div className="mb-5 rounded-xl px-4 py-2.5 text-[11px] border border-[#3a1245] bg-[#14001a]/50 text-[#b9a5c3] leading-relaxed">
             Враховано відсутніх гравців: Elo {p.home_team} {sign(p.adjustment.home_elo)}, Elo {p.away_team} {sign(p.adjustment.away_elo)}.
             Без цього було б: П1 {pct(p.base_probs[0], 0)} · X {pct(p.base_probs[1], 0)} · П2 {pct(p.base_probs[2], 0)}.
-            <span className="text-slate-500"> Поправка евристична, на історичних даних не перевірялась.</span>
+            <span className="text-[#9a82a5]"> Поправка евристична, на історичних даних не перевірялась.</span>
           </div>
         )}
         {p.data_until && (
-          <div className="mb-4 text-[10px] text-slate-500 font-mono">Статистика форми й Elo актуальна на {fmtDate(p.data_until)}</div>
+          <div className="mb-4 text-[10px] text-[#9a82a5] font-mono">Статистика форми й Elo актуальна на {fmtDate(p.data_until)}</div>
         )}
         <ProbabilityPanel p={p} />
       </div>
@@ -554,24 +559,24 @@ export default function App() {
 
   const tabBtn = (active: boolean) =>
     `px-4 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
-      active ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'}`;
+      active ? 'bg-[#e90052] text-white' : 'text-[#b9a5c3] hover:text-[#e8dff0]'}`;
   const modeBtn = (active: boolean) =>
     `py-1.5 px-2 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-colors ${
-      active ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'}`;
+      active ? 'bg-[#e90052] text-white' : 'text-[#b9a5c3] hover:text-[#e8dff0]'}`;
   const goRound = (d: number) => setEvent(Math.min(38, Math.max(1, (round?.event ?? 1) + d)));
 
   return (
-    <div className="min-h-screen text-slate-100 font-sans flex flex-col">
+    <div className="min-h-screen text-[#f5eff9] font-sans flex flex-col">
       <header className="sticky top-0 z-50 backdrop-blur-md px-6 py-4">
         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-[#00ff85] rounded-xl shadow-lg shadow-[#00ff85]/20"><Trophy className="w-6 h-6 text-[#38003c]" /></div>
             <div>
               <h1 className="text-2xl text-white leading-none">EPL Match Predictor</h1>
-              <p className="text-xs text-slate-300 mt-1">Ймовірнісні прогнози англійської Прем’єр-ліги з поясненнями</p>
+              <p className="text-xs text-[#d5c8dc] mt-1">Ймовірнісні прогнози англійської Прем’єр-ліги з поясненнями</p>
             </div>
           </div>
-          <nav className="flex flex-wrap gap-1.5 bg-slate-950/60 p-1.5 rounded-xl border border-slate-800">
+          <nav className="flex flex-wrap gap-1.5 bg-[#14001a]/60 p-1.5 rounded-xl border border-[#3a1245]">
             {TABS.map(({ id, label, Icon }) => (
               <button key={id} onClick={() => setTab(id)} className={tabBtn(tab === id)}><Icon className="w-4 h-4" /> {label}</button>
             ))}
@@ -596,7 +601,7 @@ export default function App() {
         {tab === 'predictor' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
             <aside className={`lg:col-span-4 ${card} p-5 flex flex-col lg:h-[820px]`}>
-              <div className="grid grid-cols-3 gap-1.5 mb-4 bg-slate-950 p-1 rounded-xl border border-slate-800/80">
+              <div className="grid grid-cols-3 gap-1.5 mb-4 bg-[#14001a] p-1 rounded-xl border border-[#3a1245]/80">
                 <button onClick={() => setMode('custom')} className={modeBtn(mode === 'custom')}><Sliders className="w-3.5 h-3.5" /> Свій матч</button>
                 <button onClick={() => setMode('round')} className={modeBtn(mode === 'round')}><CalendarDays className="w-3.5 h-3.5" /> Тур</button>
                 <button onClick={() => setMode('history')} className={modeBtn(mode === 'history')}><History className="w-3.5 h-3.5" /> Архів</button>
@@ -604,23 +609,23 @@ export default function App() {
 
               {mode === 'custom' && (
                 <div className="space-y-4">
-                  <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 space-y-3">
-                    <label className="block text-[11px] text-slate-400 font-medium">Господарі</label>
+                  <div className="bg-[#14001a]/60 p-4 rounded-xl border border-[#3a1245] space-y-3">
+                    <label className="block text-[11px] text-[#b9a5c3] font-medium">Господарі</label>
                     <CustomSelect value={home} onChange={setHome} options={teams} disabledOption={away} />
                     <div className="flex justify-center py-0.5">
                       <button onClick={() => { setHome(away); setAway(home); }} title="Поміняти місцями"
-                        className="p-1.5 rounded-lg text-slate-500 hover:text-indigo-400 hover:bg-slate-800 transition-colors">
+                        className="p-1.5 rounded-lg text-[#9a82a5] hover:text-[#ff6ba3] hover:bg-[#3a1245] transition-colors">
                         <ArrowLeftRight className="w-4 h-4 rotate-90" />
                       </button>
                     </div>
-                    <label className="block text-[11px] text-slate-400 font-medium">Гості</label>
+                    <label className="block text-[11px] text-[#b9a5c3] font-medium">Гості</label>
                     <CustomSelect value={away} onChange={setAway} options={teams} disabledOption={home} />
                     <button onClick={() => predictCustom(home, away)} disabled={loading || !home}
-                      className="w-full mt-2 py-2.5 bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-lg shadow-indigo-600/20 transition-all flex items-center justify-center gap-2">
+                      className="w-full mt-2 py-2.5 bg-gradient-to-r from-[#e90052] to-cyan-600 hover:from-[#ff2e7e] hover:to-cyan-500 disabled:opacity-50 text-white rounded-xl text-xs font-bold shadow-lg shadow-[#e90052]/20 transition-all flex items-center justify-center gap-2">
                       <Zap className="w-4 h-4" /> Спрогнозувати
                     </button>
                   </div>
-                  <div className="p-4 bg-indigo-950/20 border border-indigo-900/40 rounded-xl text-[11px] text-slate-400 leading-relaxed">
+                  <div className="p-4 bg-[#3a0820]/20 border border-[#5c0a30]/40 rounded-xl text-[11px] text-[#b9a5c3] leading-relaxed">
                     Прогноз завжди враховує травми та дискваліфікації (дані FPL). Гравці з шансом зіграти ≥75% вважаються доступними.
                     Модель: Elo, ковзна xG-форма, ансамбль CatBoost + LightGBM + логістична регресія.
                   </div>
@@ -630,24 +635,24 @@ export default function App() {
               {mode === 'round' && (
                 <div className="flex flex-col flex-1 min-h-0">
                   <div className="flex items-center justify-between mb-3">
-                    <button onClick={() => goRound(-1)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800"><ChevronLeft className="w-4 h-4" /></button>
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-200">Тур {round?.event ?? '…'}</span>
-                    <button onClick={() => goRound(1)} className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800"><ChevronRight className="w-4 h-4" /></button>
+                    <button onClick={() => goRound(-1)} className="p-1.5 rounded-lg text-[#b9a5c3] hover:bg-[#3a1245]"><ChevronLeft className="w-4 h-4" /></button>
+                    <span className="text-xs font-bold uppercase tracking-wider text-[#e8dff0]">Тур {round?.event ?? '…'}</span>
+                    <button onClick={() => goRound(1)} className="p-1.5 rounded-lg text-[#b9a5c3] hover:bg-[#3a1245]"><ChevronRight className="w-4 h-4" /></button>
                   </div>
                   <div className="space-y-2 overflow-y-auto pr-1 flex-1">
                     {roundError && <div className="text-xs text-amber-300">{roundError}</div>}
-                    {!round && !roundError && <div className="text-xs text-slate-500 animate-pulse">Завантаження календаря...</div>}
+                    {!round && !roundError && <div className="text-xs text-[#9a82a5] animate-pulse">Завантаження календаря...</div>}
                     {round?.fixtures.map((f) => {
                       const ok = f.prob_home_win !== null;
                       const active = prediction?.home_team === f.home_team && prediction?.away_team === f.away_team;
                       return (
                         <button key={f.home_team + f.away_team} disabled={!ok} onClick={() => pickFixture(f)}
                           className={`w-full text-left p-3 rounded-xl border transition-colors ${
-                            active ? 'bg-indigo-950/70 border-indigo-500' : ok ? 'bg-slate-950/50 border-slate-800/70 hover:border-slate-700' : 'bg-slate-950/30 border-slate-800/50 opacity-70'}`}>
-                          <div className="text-[10px] text-slate-500 font-mono mb-2">{fmtKickoff(f.kickoff)}</div>
+                            active ? 'bg-[#3a0820]/70 border-[#ff2e7e]' : ok ? 'bg-[#14001a]/50 border-[#3a1245]/70 hover:border-[#52275f]' : 'bg-[#14001a]/30 border-[#3a1245]/50 opacity-70'}`}>
+                          <div className="text-[10px] text-[#9a82a5] font-mono mb-2">{fmtKickoff(f.kickoff)}</div>
                           <div className="flex items-center justify-between gap-2 text-xs font-medium">
                             <span className="flex items-center gap-2 min-w-0"><TeamBadge src={f.home_crest} name={f.home_team} size={22} /><span className="truncate">{f.home_team}</span></span>
-                            <span className="text-slate-600 text-[10px]">vs</span>
+                            <span className="text-[#7a5a86] text-[10px]">vs</span>
                             <span className="flex items-center gap-2 min-w-0 justify-end"><span className="truncate">{f.away_team}</span><TeamBadge src={f.away_crest} name={f.away_team} size={22} /></span>
                           </div>
                           {ok && <MiniBar f={f} />}
@@ -662,28 +667,28 @@ export default function App() {
               {mode === 'history' && (
                 <>
                   <div className="relative mb-4">
-                    <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-500" />
+                    <Search className="w-4 h-4 absolute left-3 top-2.5 text-[#9a82a5]" />
                     <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Пошук команди..."
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+                      className="w-full bg-[#14001a] border border-[#3a1245] rounded-xl pl-9 pr-4 py-2 text-xs text-[#e8dff0] placeholder-[#9a82a5] focus:outline-none focus:border-[#ff2e7e]" />
                   </div>
                   <div className="space-y-2 overflow-y-auto pr-1 flex-1 max-h-[560px] lg:max-h-none">
                     {filtered.map((m) => (
                       <button key={m.id} onClick={() => selectMatch(m.id)}
                         className={`w-full text-left p-3 rounded-xl border transition-colors ${
-                          selectedId === m.id ? 'bg-indigo-950/70 border-indigo-500 text-white' : 'bg-slate-950/50 border-slate-800/70 hover:border-slate-700 text-slate-300'}`}>
-                        <div className="flex justify-between items-center text-[10px] text-slate-500 mb-1.5 font-mono">
+                          selectedId === m.id ? 'bg-[#3a0820]/70 border-[#ff2e7e] text-white' : 'bg-[#14001a]/50 border-[#3a1245]/70 hover:border-[#52275f] text-[#d5c8dc]'}`}>
+                        <div className="flex justify-between items-center text-[10px] text-[#9a82a5] mb-1.5 font-mono">
                           <span>{fmtDate(m.match_date)}</span>
-                          <span className={`px-1.5 py-0.5 rounded ${m.split === 'test' ? 'bg-indigo-900/60 text-indigo-300' : 'bg-slate-800 text-slate-400'}`}>
+                          <span className={`px-1.5 py-0.5 rounded ${m.split === 'test' ? 'bg-[#5c0a30]/60 text-[#ff9ec3]' : 'bg-[#3a1245] text-[#b9a5c3]'}`}>
                             {m.split === 'test' ? 'тест' : 'навч.'}
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-xs font-medium gap-2">
-                          <span className="truncate">{m.home_team} <span className="text-slate-500">vs</span> {m.away_team}</span>
+                          <span className="truncate">{m.home_team} <span className="text-[#9a82a5]">vs</span> {m.away_team}</span>
                           <span className={`font-mono px-2 py-0.5 rounded font-bold shrink-0 ${OUTCOME[m.result_1x2].badge}`}>{m.home_score}:{m.away_score}</span>
                         </div>
                       </button>
                     ))}
-                    {filtered.length === 0 && <div className="text-xs text-slate-500 text-center py-8">Нічого не знайдено</div>}
+                    {filtered.length === 0 && <div className="text-xs text-[#9a82a5] text-center py-8">Нічого не знайдено</div>}
                   </div>
                 </>
               )}
@@ -692,13 +697,13 @@ export default function App() {
             <section className="lg:col-span-8">
               {loading ? <Spinner text="Обчислення ймовірностей..." />
                 : prediction ? <PredictionView p={prediction} />
-                : <div className={`${card} p-16 text-center text-xs text-slate-500`}>Оберіть матч, щоб побачити прогноз</div>}
+                : <div className={`${card} p-16 text-center text-xs text-[#9a82a5]`}>Оберіть матч, щоб побачити прогноз</div>}
             </section>
           </div>
         )}
       </main>
 
-      <footer className="border-t border-slate-800 px-6 py-4 text-center text-[11px] text-slate-500">
+      <footer className="border-t border-[#3a1245] px-6 py-4 text-center text-[11px] text-[#9a82a5]">
         Навчальний проєкт. Прогнози мають імовірнісний характер і не є порадою для ставок. Емблеми й фото належать клубам та АПЛ.
       </footer>
     </div>

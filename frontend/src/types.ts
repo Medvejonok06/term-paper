@@ -34,6 +34,7 @@ export interface Prediction {
   adjustment: { home_elo: number; away_elo: number } | null;
   data_until: string | null;
   base_probs: number[] | null;
+  likely_score: string;
 }
 
 export interface Match {

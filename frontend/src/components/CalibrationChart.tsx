@@ -12,9 +12,9 @@ export default function CalibrationChart() {
   if (!cal) return null;
   const tick = { fill: '#b9a5c3', fontSize: 10 };
   return (
-    <div className="max-w-5xl mx-auto mt-8 bg-slate-900/70 border border-slate-800 rounded-2xl p-6">
-      <h3 className="text-sm font-bold text-slate-100">Калібрування ймовірностей (тест, {cal.n} матчів)</h3>
-      <p className="text-[11px] text-slate-400 mt-1 mb-3">
+    <div className="max-w-5xl mx-auto mt-8 bg-[#230029]/70 border border-[#3a1245] rounded-2xl p-6">
+      <h3 className="text-sm font-bold text-[#f5eff9]">Калібрування ймовірностей (тест, {cal.n} матчів)</h3>
+      <p className="text-[11px] text-[#b9a5c3] mt-1 mb-3">
         Чим ближче точки до діагоналі, тим чесніші ймовірності. Середня похибка калібрування (ECE): {cal.ece.toFixed(3)}.
       </p>
       <div className="h-72">

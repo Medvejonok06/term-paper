@@ -116,6 +116,7 @@ def build_features_dataset() -> None:
         elo_home.append(elo.get_rating(r.home_team_id))
         elo_away.append(elo.get_rating(r.away_team_id))
         elo.update_match(r.home_team_id, r.away_team_id, r.home_score, r.away_score)
+    df["elo_home"], df["elo_away"] = elo_home, elo_away
 
     ctx, final_table, h2h = season_context(df)
     for name, values in ctx.items():
@@ -202,6 +203,10 @@ def build_features_dataset() -> None:
         state[name] = entry
 
     df = add_derived(df)
+    from src.features import dixon_coles as dc
+    dc.set_calibration(xg_mean=(df["home_xgf_10"].mean() + df["away_xgf_10"].mean()) / 2,
+                       home_goals=df["home_score"].mean(), away_goals=df["away_score"].mean())
+    print(f"Калібрування голів: {dc.CALIB}")
     df["home_team"] = df["home_team_id"].map(names)
     df["away_team"] = df["away_team_id"].map(names)
     df["target"] = df["result_1x2"].map({"H": 0, "D": 1, "A": 2})

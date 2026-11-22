@@ -3,7 +3,7 @@ import numpy as np
 from catboost import CatBoostClassifier, Pool
 from scipy.optimize import minimize_scalar
 from sklearn.metrics import log_loss
-
+from sklearn.linear_model import LogisticRegression
 from src.features.schema import SHIN_COLS
 
 
@@ -68,3 +68,32 @@ class EnsembleModel:
     def predict_proba(self, X) -> np.ndarray:
         probs = self.blend(X)
         return apply_temperature(probs, self.temperature) if self.temperature != 1.0 else probs
+
+    from sklearn.linear_model import LogisticRegression
+
+
+class ShinOnly:
+    """Чистий ринок як член ансамблю: стекер сам вирішує, скільки довіряти поправкам моделі."""
+
+    def fit(self, X, y=None):
+        return self
+
+    def predict_proba(self, X) -> np.ndarray:
+        p = X[SHIN_COLS].to_numpy(dtype=float).copy()
+        p[~np.isfinite(p).all(axis=1)] = [0.45, 0.26, 0.29]
+        return p / p.sum(axis=1, keepdims=True)
+
+
+class ColumnLR:
+    """Логістична регресія на фіксованому наборі колонок (наприклад, лише elo_diff)."""
+
+    def __init__(self, cols: list[str], C: float = 1.0):
+        self.cols = cols
+        self.model = LogisticRegression(C=C, max_iter=2000)
+
+    def fit(self, X, y):
+        self.model.fit(X[self.cols], y)
+        return self
+
+    def predict_proba(self, X) -> np.ndarray:
+        return self.model.predict_proba(X[self.cols])

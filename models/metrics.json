@@ -1,57 +1,57 @@
 {
-  "train_samples": 2205,
-  "val_samples": 382,
-  "test_samples": 353,
-  "test_from": "2025-08-30",
-  "test_to": "2026-05-24",
+  "train_samples": 2273,
+  "val_samples": 394,
+  "test_samples": 364,
+  "test_from": "2025-11-09",
+  "test_to": "2026-11-08",
   "models": [
     {
       "key": "prior",
       "name": "Частоти результатів (без ознак)",
       "kind": "baseline",
-      "accuracy": 42.21,
-      "log_loss": 1.0891,
-      "rps": 0.2283
+      "accuracy": 39.56,
+      "log_loss": 1.103,
+      "rps": 0.2285
     },
     {
       "key": "elo",
       "name": "Elo + логістична регресія",
       "kind": "baseline",
-      "accuracy": 48.44,
-      "log_loss": 1.0323,
-      "rps": 0.21
+      "accuracy": 47.25,
+      "log_loss": 1.0443,
+      "rps": 0.2101
     },
     {
       "key": "dc",
       "name": "Dixon-Coles (xG-форма)",
       "kind": "baseline",
-      "accuracy": 48.44,
-      "log_loss": 1.0545,
-      "rps": 0.2132
+      "accuracy": 46.43,
+      "log_loss": 1.0581,
+      "rps": 0.2148
     },
     {
       "key": "bookmaker",
       "name": "Букмекери (Bet365, Shin)",
       "kind": "benchmark",
-      "accuracy": 49.01,
-      "log_loss": 1.0232,
-      "rps": 0.2069
+      "accuracy": 48.08,
+      "log_loss": 1.0261,
+      "rps": 0.2043
     },
     {
       "key": "fundamental",
       "name": "Наш ансамбль (без коефіцієнтів)",
       "kind": "ours",
-      "accuracy": 47.88,
-      "log_loss": 1.0244,
-      "rps": 0.2069
+      "accuracy": 45.33,
+      "log_loss": 1.0441,
+      "rps": 0.2103
     },
     {
       "key": "market",
       "name": "Наш ансамбль (з коефіцієнтами)",
       "kind": "ours",
-      "accuracy": 48.73,
-      "log_loss": 1.0254,
-      "rps": 0.2061
+      "accuracy": 47.53,
+      "log_loss": 1.0317,
+      "rps": 0.2055
     }
   ],
   "ablation": {
@@ -59,29 +59,55 @@
       {
         "set": "v1",
         "n_features": 26,
-        "val_log_loss": 0.984
+        "oof_log_loss": 0.9581,
+        "weights": {
+          "elo_lr": 0.3,
+          "cb": 0.2,
+          "lgbm": 0.0,
+          "lr_all": 0.5
+        }
       },
       {
         "set": "lean",
         "n_features": 22,
-        "val_log_loss": 0.9704
+        "oof_log_loss": 0.9592,
+        "weights": {
+          "elo_lr": 0.4,
+          "cb": 0.5,
+          "lgbm": 0.0,
+          "lr_all": 0.1
+        }
       },
       {
         "set": "full",
         "n_features": 69,
-        "val_log_loss": 0.9776
+        "oof_log_loss": 0.9599,
+        "weights": {
+          "elo_lr": 0.5,
+          "cb": 0.5,
+          "lgbm": 0.0,
+          "lr_all": 0.0
+        }
       }
     ],
     "market": [
       {
         "set": "market_lean",
         "n_features": 25,
-        "val_log_loss": 0.9624
+        "oof_log_loss": 0.9459,
+        "weights": {
+          "market": 0.6,
+          "cb_offset": 0.4
+        }
       },
       {
         "set": "market_full",
         "n_features": 72,
-        "val_log_loss": 0.9695
+        "oof_log_loss": 0.9463,
+        "weights": {
+          "market": 0.5,
+          "cb_offset": 0.5
+        }
       }
     ]
   }

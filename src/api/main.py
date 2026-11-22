@@ -22,6 +22,8 @@ from src.data import fpl
 from src.features.dixon_coles import predict_score_matrix, top_scores
 from src.features.schema import SHIN_COLS, matchup_from_state
 
+from src.features.dixon_coles import match_lambdas, predict_score_matrix, top_scores
+
 log = logging.getLogger("uvicorn.error")
 FEATURES_PATH = Path("data/processed/epl_features.parquet")
 STATE_PATH = Path("data/processed/team_state.json")
@@ -96,6 +98,7 @@ class Prediction(BaseModel):
     adjustment: Adjustment | None = None
     data_until: str | None = None
     base_probs: list[float] | None = None
+    likely_score: str = ""
 
 
 class CustomRequest(BaseModel):
@@ -226,8 +229,11 @@ def _predict(row: pd.DataFrame, home: str, away: str, *, use_market: bool, match
     r = row.iloc[0]
     before = r["match_date"] if "match_date" in row.columns else None
 
-    matrix = _align(predict_score_matrix(float(r["exp_home_goals"]), float(r["exp_away_goals"]))[3], probs)
+    lam, mu = match_lambdas(probs, float(r["exp_home_goals"] + r["exp_away_goals"]))
+    matrix = _align(predict_score_matrix(lam, mu)[3], probs)
     gh, ga = np.indices(matrix.shape)
+    mask = (gh > ga, gh == ga, gh < ga)[cls]
+    best_h, best_a = np.unravel_index(np.where(mask, matrix, 0.0).argmax(), matrix.shape)
     over_25 = float(matrix[gh + ga >= 3].sum())
     btts = float(matrix[(gh > 0) & (ga > 0)].sum())
 
@@ -240,7 +246,7 @@ def _predict(row: pd.DataFrame, home: str, away: str, *, use_market: bool, match
         match_id=match_id, home_team=home, away_team=away,
         prob_home_win=float(probs[0]), prob_draw=float(probs[1]), prob_away_win=float(probs[2]),
         predicted_class=pred_code, predicted_outcome=outcome_text[pred_code], model_used=key,
-        expected_home_goals=float(r["exp_home_goals"]), expected_away_goals=float(r["exp_away_goals"]),
+        expected_home_goals=float(lam), expected_away_goals=float(mu), likely_score=f"{best_h}:{best_a}",
         exact_scores=[ScoreProb(score=s, prob=p) for s, p in top_scores(matrix, 5)],
         score_matrix=[[round(float(v), 4) for v in line[:6]] for line in matrix[:6]],
         over_25=over_25, btts=btts,
@@ -306,7 +312,6 @@ def squad(team: str):
     return s
 
 
-@app.get("/api/v1/fixtures/next", response_model=NextRound)
 def _round(event: int | None, adjust: bool) -> NextRound:
     rnd = fpl.upcoming_round(event)
     if rnd is None:
