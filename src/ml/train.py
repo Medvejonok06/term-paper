@@ -65,6 +65,36 @@ def weight_grid(k: int, step: int = 10) -> list[np.ndarray]:
                 yield (i, *rest)
     return [np.array(w) / step for w in rec(k, step)]
 
+def drift_factors(probs: np.ndarray, y: np.ndarray, window: int, alpha: float) -> np.ndarray:
+    """Множники для виправлення зсуву частот результатів за останніми `window` матчами."""
+    p, o = probs[-window:], y[-window:]
+    obs = np.clip(np.bincount(o, minlength=3) / len(o), 1e-3, 1.0)
+    return (obs / p.mean(axis=0)) ** alpha
+
+
+def sequential_adapt(probs: np.ndarray, y: np.ndarray, start: int, window: int, alpha: float) -> np.ndarray:
+    """Кожен прогноз i >= start коригується лише за матчами ДО нього (без витоку)."""
+    out = probs.copy()
+    for i in range(start, len(probs)):
+        q = probs[i] * drift_factors(probs[:i], y[:i], window, alpha)
+        out[i] = q / q.sum()
+    return out
+
+
+def choose_drift(oof: np.ndarray, y: np.ndarray, warmup: int = 150,
+                 windows=(150, 300, 500), alphas=(0.5, 1.0)) -> dict | None:
+    def loss(p):
+        return log_loss(y[warmup:], p[warmup:], labels=[0, 1, 2])
+
+    base, best = loss(oof), None
+    for w in windows:
+        for a in alphas:
+            l = loss(sequential_adapt(oof, y, warmup, w, a))
+            if l < base - 0.001 and (best is None or l < best["oof_loss"]):
+                best = {"window": w, "alpha": a, "oof_loss": round(float(l), 4), "oof_base": round(float(base), 4)}
+    print(f"Корекція дрейфу: {best if best else 'не покращила OOF, не застосовую'} (база {base:.4f})")
+    return best
+
 
 def oof_predict(factories: dict, X, y, n_splits: int = 4, test_size: int = 380):
     """Walk-forward: кожен фолд вчиться на минулому й прогнозує наступні ~380 матчів (сезон)."""
@@ -137,9 +167,13 @@ def fit_bundle(label: str, cols: list[str], tr, va, offset: bool) -> dict:
     print(f"OOF ({len(y_oof)} матчів), logloss членів: {members}")
     print(f"Ваги {dict(zip(names, best_w.round(2).tolist()))}, T={temperature:.3f}, OOF logloss={oof_loss:.4f}")
 
+    oof_probs = apply_temperature(blend, temperature)
     fitted = {n: make().fit(Xall, yall) for n, make in factories.items()}       # рефіт на train+val
     ensemble = EnsembleModel(list(fitted.values()), best_w, temperature)
     cb_model = fitted["cb"] if "cb" in fitted else fitted["cb_offset"].model
+    return {"label": label, "cols": cols, "cb": cb_model, "ensemble": ensemble, "val_loss": float(oof_loss),
+            "offset": offset, "weights": dict(zip(names, best_w.tolist())),
+            "oof_probs": oof_probs, "y_oof": y_oof}
     return {"label": label, "cols": cols, "cb": cb_model, "ensemble": ensemble, "val_loss": float(oof_loss),
             "offset": offset, "weights": dict(zip(names, best_w.tolist()))}
 
@@ -192,8 +226,17 @@ def main() -> None:
                                      ("market", "Наш ансамбль (з коефіцієнтами)", MARKET_SETS, True)):
         bundle, rows = pick_best(sets, tr, va, offset)
         ablation[key] = rows
+        p_test = bundle["ensemble"].predict_proba(te[bundle["cols"]])
+        add(key, label, "ours", p_test)
+
+        oof, y_oof = bundle.pop("oof_probs"), bundle.pop("y_oof")
+        cfg = choose_drift(oof, y_oof)
+        if cfg:
+            all_p, all_y = np.vstack([oof, p_test]), np.concatenate([y_oof, yte])
+            adapted = sequential_adapt(all_p, all_y, len(oof), cfg["window"], cfg["alpha"])[len(oof):]
+            add(f"{key}_adapt", f"{label} + адаптація до дрейфу", "ours", adapted)
+            bundle["drift"] = {**cfg, "factors": drift_factors(all_p, all_y, cfg["window"], cfg["alpha"]).tolist()}
         joblib.dump(bundle, MODELS_DIR / f"bundle_{key}.joblib")
-        add(key, label, "ours", bundle["ensemble"].predict_proba(te[bundle["cols"]]))
 
     summary = {"train_samples": len(tr), "val_samples": len(va), "test_samples": len(te),
                "test_from": te["match_date"].min().strftime("%Y-%m-%d"),

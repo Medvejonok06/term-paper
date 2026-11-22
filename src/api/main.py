@@ -216,6 +216,12 @@ def _align(matrix: np.ndarray, probs: np.ndarray) -> np.ndarray:
             out[mask] *= p / s
     return out
 
+def _adapt(bundle: dict, probs: np.ndarray) -> np.ndarray:
+    d = bundle.get("drift")
+    if not d:
+        return probs
+    q = probs * np.asarray(d["factors"])
+    return q / q.sum()
 
 def _predict(row: pd.DataFrame, home: str, away: str, *, use_market: bool, match_id: int | None = None,
              actual: Actual | None = None, split: str | None = None, bookmaker: list[float] | None = None, base_probs: list[float] | None = None,
@@ -225,6 +231,8 @@ def _predict(row: pd.DataFrame, home: str, away: str, *, use_market: bool, match
     bundle = ART["bundles"][key]
     X = row[bundle["cols"]]
     probs = bundle["ensemble"].predict_proba(X)[0]
+    if match_id is None:
+        probs = _adapt(bundle, probs)
     cls = int(np.argmax(probs))
     r = row.iloc[0]
     before = r["match_date"] if "match_date" in row.columns else None
@@ -266,7 +274,7 @@ def _custom(home: str, away: str, adjust: bool = True, explain: bool = True) -> 
         if sh and sa:
             bundle = ART["bundles"]["fundamental"]
             base_row = matchup_from_state(hs, aw)
-            base = [float(v) for v in bundle["ensemble"].predict_proba(base_row[bundle["cols"]])[0]]
+            base = [float(v) for v in _adapt(bundle, bundle["ensemble"].predict_proba(base_row[bundle["cols"]])[0])]
             hs["elo"] += sh["elo_penalty"]
             aw["elo"] += sa["elo_penalty"]
             adjustment = Adjustment(home_elo=sh["elo_penalty"], away_elo=sa["elo_penalty"])
