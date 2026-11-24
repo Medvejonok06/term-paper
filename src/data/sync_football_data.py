@@ -85,10 +85,11 @@ def sync(from_year: int, to_year: int) -> None:
 
         total = 0
         for year in range(from_year, to_year + 1):
+            label = f"{year % 100:02d}{(year + 1) % 100:02d}"        # формат сезону як у БД, наприклад 2627
             df = download(year)
             if df is None:
                 continue
-                label, added = f"{year % 100:02d}{(year + 1) % 100:02d}", 0
+            added = 0
             for r in df.to_dict("records"):
                 for name in (r["HomeTeam"], r["AwayTeam"]):
                     if name not in teams:

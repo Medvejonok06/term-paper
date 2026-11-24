@@ -10,3 +10,4 @@ train.log
 nohup.out
 .env
 models_frozen/
+uvicorn.log
