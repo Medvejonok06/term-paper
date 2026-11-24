@@ -4,6 +4,9 @@ from __future__ import annotations
 import numpy as np
 from fastapi import APIRouter, HTTPException, Query
 
+import json
+from pathlib import Path
+
 from src.data import fpl
 from src.features.dixon_coles import expected_goals
 
@@ -171,3 +174,10 @@ def importance(model: str = "fundamental", top: int = Query(15, ge=3, le=40)):
         raise HTTPException(404, "Невідома модель")
     imp = b["cb"].get_feature_importance()
     return [{"feature": b["cols"][i], "importance": round(float(imp[i]), 3)} for i in np.argsort(-imp)[:top]]
+
+@router.get("/analytics/live")
+def live_backtest():
+    p = Path("data/live/summary.json")
+    if not p.exists():
+        raise HTTPException(404, "Журнал ще не має завершених матчів: python -m src.live.evaluate")
+    return json.loads(p.read_text(encoding="utf-8"))

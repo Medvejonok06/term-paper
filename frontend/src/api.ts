@@ -1,6 +1,7 @@
 import axios from 'axios';
+
 import type {
-  Calibration, Health, InjuryTeam, Match, MetricsResponse, NextRound, Prediction, SimResult, Squad, Standing, TeamOption,
+  Calibration, Health, InjuryTeam, Match, MetricsResponse, NextRound, Prediction, SimResult, Squad, Standing, TeamOption, LiveSummary,
 } from './types';
 
 const http = axios.create({ baseURL: '/api/v1', timeout: 20000 });
@@ -16,6 +17,7 @@ export function errorMessage(e: unknown): string {
 }
 
 export const api = {
+  live: () => http.get<LiveSummary>('/analytics/live').then((r) => r.data),
   health: () => http.get<Health>('/health').then((r) => r.data),
   teams: () => http.get<TeamOption[]>('/teams').then((r) => r.data),
   recentMatches: (limit = 40) => http.get<Match[]>('/matches/recent', { params: { limit } }).then((r) => r.data),

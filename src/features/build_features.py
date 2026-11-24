@@ -214,8 +214,13 @@ def build_features_dataset() -> None:
     meta = ["match_id", "match_date", "season", "home_team", "away_team", "home_score", "away_score",
             "result_1x2", "target", "home_games_played", "away_games_played"]
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    df[meta + MARKET_COLS].to_parquet(OUT_DIR / "epl_features.parquet", index=False)
-    (OUT_DIR / "team_state.json").write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+    path = OUT_DIR / "epl_features.parquet"
+    out = df[meta + MARKET_COLS].copy()
+    if path.exists():
+        prev = pd.read_parquet(path)
+        if "split" in prev.columns:        # нові матчі позначаємо "live": модель їх ніколи не бачила
+            out["split"] = out["match_id"].map(prev.set_index("match_id")["split"]).fillna("live")
+    out.to_parquet(path, index=False)
 
     nan_share = df[MARKET_COLS].isna().mean()
     print("Колонки з пропусками:", nan_share[nan_share > 0].round(3).to_dict() or "немає")

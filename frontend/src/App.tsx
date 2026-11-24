@@ -13,6 +13,7 @@ import Injuries from './views/Injuries';
 import Simulation from './views/Simulation';
 import Standings from './views/Standings';
 import type { Fixture, Match, MetricsResponse, NextRound, Outcome, Prediction, TeamOption } from './types';
+import LiveBacktest from './components/LiveBacktest';
 
 /* ---------- Допоміжне ---------- */
 const pct = (x: number, d = 1) => `${(x * 100).toFixed(d)}%`;
@@ -340,7 +341,7 @@ function PredictionView({ p }: { p: Prediction }) {
             ({OUTCOME[p.actual.result].short}), модель {p.actual.correct ? 'вгадала' : 'помилилась'}
           </div>
         )}
-        {p.split && p.split !== 'test' && (
+        {p.split && !['test', 'live'].includes(p.split) && (
           <div className="mb-5 rounded-xl px-4 py-2.5 text-[11px] border border-amber-800/60 bg-amber-950/20 text-amber-300">
             Цей матч входив у навчальну або валідаційну вибірку, тому така перевірка не є об’єктивною.
             Для чесної оцінки обирай матчі з позначкою «тест».
@@ -596,7 +597,7 @@ export default function App() {
         {tab === 'table' && <Standings />}
         {tab === 'injuries' && <Injuries />}
         {tab === 'simulation' && <Simulation />}
-        {tab === 'analytics' && (<><MetricsTab data={metrics} /><CalibrationChart /></>)}
+        {tab === 'analytics' && (<><MetricsTab data={metrics} /><CalibrationChart /><LiveBacktest /></>)}
 
         {tab === 'predictor' && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -678,8 +679,8 @@ export default function App() {
                           selectedId === m.id ? 'bg-[#3a0820]/70 border-[#ff2e7e] text-white' : 'bg-[#14001a]/50 border-[#3a1245]/70 hover:border-[#52275f] text-[#d5c8dc]'}`}>
                         <div className="flex justify-between items-center text-[10px] text-[#9a82a5] mb-1.5 font-mono">
                           <span>{fmtDate(m.match_date)}</span>
-                          <span className={`px-1.5 py-0.5 rounded ${m.split === 'test' ? 'bg-[#5c0a30]/60 text-[#ff9ec3]' : 'bg-[#3a1245] text-[#b9a5c3]'}`}>
-                            {m.split === 'test' ? 'тест' : 'навч.'}
+                          <span className={`px-1.5 py-0.5 rounded ${['test', 'live'].includes(m.split) ? 'bg-[#5c0a30]/60 text-[#ff9ec3]' : 'bg-[#3a1245] text-[#b9a5c3]'}`}>
+                            {['test', 'live'].includes(m.split) ? 'тест' : 'навч.'}
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-xs font-medium gap-2">

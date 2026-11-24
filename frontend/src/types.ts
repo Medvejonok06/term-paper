@@ -93,3 +93,8 @@ export interface SimResult { simulations: number; remaining_matches: number; tea
 export interface CalibPoint { pred: number; obs: number; n: number }
 export interface Calibration { n: number; ece: number; classes: Record<'H' | 'D' | 'A', CalibPoint[]> }
 export interface Health { status: string; matches: number; teams: number; fpl_available: boolean; missing_teams: string[] }
+export interface LiveSummary {
+  logged: number; settled: number; with_odds: number;
+  models: { name: string; n: number; accuracy: number; log_loss: number; rps: number }[];
+  comparisons: { name: string; n: number; diff: number; lo: number | null; hi: number | null }[];
+}
