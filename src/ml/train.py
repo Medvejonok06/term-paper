@@ -20,7 +20,7 @@ from src.features.schema import DC_COLS, FUND_SETS, MARKET_SETS, SHIN_COLS
 import warnings
 from sklearn.model_selection import TimeSeriesSplit
 from src.ml.ensemble import (
-    ColumnLR, EnsembleModel, MarketOffsetCatBoost, ShinOnly, apply_temperature, fit_temperature, rps_score,
+    ColumnLR, EnsembleModel, MarketOffsetCatBoost, ShinOnly, apply_temperature, fit_temperature, rps_score, DistilledMarket, Sub,
 )
 
 warnings.filterwarnings("ignore", message=".*eval_set.*")
@@ -141,16 +141,21 @@ def fit_bundle(label: str, cols: list[str], tr, va, offset: bool) -> dict:
     cb_params = {**params, "iterations": n_cb}
     if offset:
         factories = {"market": ShinOnly, "cb_offset": lambda: MarketOffsetCatBoost(**cb_params)}
+        ext = cols
     else:
         factories = {
             "elo_lr": lambda: ColumnLR(["elo_diff"]),
-            "cb": lambda: CatBoostClassifier(**cb_params),
-            "lgbm": lambda: LGBMClassifier(n_estimators=n_lgb, **LGB),
-            "lr_all": lambda: make_pipeline(SimpleImputer(strategy="median"), StandardScaler(),
-                                            LogisticRegression(C=0.1, max_iter=3000)),
+            "cb": lambda: Sub(CatBoostClassifier(**cb_params), cols),
+            "lgbm": lambda: Sub(LGBMClassifier(n_estimators=n_lgb, **LGB), cols),
+            "lr_all": lambda: Sub(make_pipeline(SimpleImputer(strategy="median"), StandardScaler(),
+                                                LogisticRegression(C=0.1, max_iter=3000)), cols),
+            "dist_ridge": lambda: DistilledMarket(cols, "ridge"),
+            "dist_cb": lambda: DistilledMarket(cols, "cb"),
         }
+        ext = cols + [c for c in SHIN_COLS if c not in cols]     # коефіцієнти лише як цілі дистиляції
 
-    Xall, yall = pd.concat([Xtr, Xva]), pd.concat([ytr, yva])
+    Xall, yall = pd.concat([tr, va])[ext], pd.concat([ytr, yva])
+    idx, oof = oof_predict(factories, Xall, yall)
     idx, oof = oof_predict(factories, Xall, yall)
     y_oof = yall.iloc[idx].to_numpy()
     names = list(factories)
@@ -170,7 +175,7 @@ def fit_bundle(label: str, cols: list[str], tr, va, offset: bool) -> dict:
     oof_probs = apply_temperature(blend, temperature)
     fitted = {n: make().fit(Xall, yall) for n, make in factories.items()}       # рефіт на train+val
     ensemble = EnsembleModel(list(fitted.values()), best_w, temperature)
-    cb_model = fitted["cb"] if "cb" in fitted else fitted["cb_offset"].model
+    cb_model = fitted["cb"].model if "cb" in fitted else fitted["cb_offset"].model
     return {"label": label, "cols": cols, "cb": cb_model, "ensemble": ensemble, "val_loss": float(oof_loss),
             "offset": offset, "weights": dict(zip(names, best_w.tolist())),
             "oof_probs": oof_probs, "y_oof": y_oof}

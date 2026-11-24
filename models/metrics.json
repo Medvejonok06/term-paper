@@ -41,9 +41,9 @@
       "key": "fundamental",
       "name": "Наш ансамбль (без коефіцієнтів)",
       "kind": "ours",
-      "accuracy": 45.33,
-      "log_loss": 1.0441,
-      "rps": 0.2103
+      "accuracy": 45.6,
+      "log_loss": 1.0366,
+      "rps": 0.2087
     },
     {
       "key": "market",
@@ -59,34 +59,40 @@
       {
         "set": "v1",
         "n_features": 26,
-        "oof_log_loss": 0.9581,
+        "oof_log_loss": 0.9568,
         "weights": {
-          "elo_lr": 0.3,
+          "elo_lr": 0.0,
           "cb": 0.2,
           "lgbm": 0.0,
-          "lr_all": 0.5
+          "lr_all": 0.3,
+          "dist_ridge": 0.5,
+          "dist_cb": 0.0
         }
       },
       {
         "set": "lean",
         "n_features": 22,
-        "oof_log_loss": 0.9592,
+        "oof_log_loss": 0.9566,
         "weights": {
-          "elo_lr": 0.4,
-          "cb": 0.5,
+          "elo_lr": 0.0,
+          "cb": 0.3,
           "lgbm": 0.0,
-          "lr_all": 0.1
+          "lr_all": 0.0,
+          "dist_ridge": 0.7,
+          "dist_cb": 0.0
         }
       },
       {
         "set": "full",
         "n_features": 69,
-        "oof_log_loss": 0.9599,
+        "oof_log_loss": 0.958,
         "weights": {
-          "elo_lr": 0.5,
-          "cb": 0.5,
+          "elo_lr": 0.2,
+          "cb": 0.3,
           "lgbm": 0.0,
-          "lr_all": 0.0
+          "lr_all": 0.0,
+          "dist_ridge": 0.5,
+          "dist_cb": 0.0
         }
       }
     ],

@@ -5,6 +5,11 @@ from scipy.optimize import minimize_scalar
 from sklearn.metrics import log_loss
 from sklearn.linear_model import LogisticRegression
 from src.features.schema import SHIN_COLS
+from catboost import CatBoostRegressor
+from sklearn.impute import SimpleImputer
+from sklearn.linear_model import Ridge
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 
 
 def softmax(z: np.ndarray) -> np.ndarray:
@@ -97,3 +102,42 @@ class ColumnLR:
 
     def predict_proba(self, X) -> np.ndarray:
         return self.model.predict_proba(X[self.cols])
+
+class Sub:
+    """Віддає моделі лише вказані колонки, щоб вона не бачила зайвого (наприклад, коефіцієнтів)."""
+
+    def __init__(self, model, cols: list[str]):
+        self.model, self.cols = model, cols
+
+    def fit(self, X, y):
+        self.model.fit(X[self.cols], y)
+        return self
+
+    def predict_proba(self, X) -> np.ndarray:
+        return self.model.predict_proba(X[self.cols])
+
+
+class DistilledMarket:
+    """Дистиляція ринку: відтворює ймовірності букмекерів (Shin) лише з фундаментальних ознак.
+    Коефіцієнти потрібні тільки при навчанні (як цілі), під час прогнозу їх немає."""
+
+    def __init__(self, cols: list[str], kind: str = "ridge"):
+        self.cols, self.kind = cols, kind
+        if kind == "ridge":
+            self.model = make_pipeline(SimpleImputer(strategy="median"), StandardScaler(), Ridge(alpha=30.0))
+        else:
+            self.model = CatBoostRegressor(loss_function="MultiRMSE", depth=3, iterations=400, learning_rate=0.03,
+                                           l2_leaf_reg=10.0, random_seed=42, verbose=0, allow_writing_files=False)
+
+    def fit(self, X, y=None):
+        p = X[SHIN_COLS].to_numpy(dtype=float)
+        ok = np.isfinite(p).all(axis=1)
+        p = np.clip(p[ok], 1e-4, 1.0)
+        p = p / p.sum(axis=1, keepdims=True)
+        z = np.column_stack([np.log(p[:, 0] / p[:, 1]), np.log(p[:, 2] / p[:, 1])])
+        self.model.fit(X[self.cols].to_numpy(dtype=float)[ok], z)
+        return self
+
+    def predict_proba(self, X) -> np.ndarray:
+        z = np.asarray(self.model.predict(X[self.cols].to_numpy(dtype=float)))
+        return softmax(np.column_stack([z[:, 0], np.zeros(len(z)), z[:, 1]]))
