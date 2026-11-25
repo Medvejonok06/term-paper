@@ -32,3 +32,11 @@
 - Прогнози не є порадою для ставок.
 
 Журнал живих прогнозів: `data/live/`. Контрольні суми замороженої моделі: `models/CHECKSUMS.txt`.
+
+## База даних (PostgreSQL)
+
+    docker compose up -d db                          # або власний Postgres; адреса в .env (див. .env.example)
+    python -m scripts.import_db                      # таблиці + дані з data/db_export/*.csv
+    python -m scripts.export_db                      # зворотній експорт (оновити CSV)
+
+Оновлення свіжими матчами: `python -m src.data.sync_football_data`.

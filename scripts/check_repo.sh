@@ -13,7 +13,7 @@ git ls-files | grep -Ei '\.env|\.db$|\.sqlite|\.joblib|\.parquet|\.pem|secret|to
 echo; echo "== підозрілий вміст =="
 git grep -nIE 'ghp_|github_pat_|AKIA[0-9A-Z]{12}|api[_-]?key *=|password *=' -- . ':!package-lock.json' | head || true
 echo; echo "== python compile =="; python -m compileall -q src && echo OK
-echo; echo "== frontend tsc =="; (cd frontend && npx tsc -b && echo OK)
+echo; echo "== frontend tsc =="; (cd frontend && npx tsc --noEmit && echo OK)
 echo; echo "== API smoke =="
 for p in health teams standings injuries elo analytics/metrics analytics/live; do
   printf "%-20s" "$p"; curl -s -o /dev/null -w "%{http_code}\n" "http://127.0.0.1:8000/api/v1/$p"
