@@ -15,7 +15,7 @@ print("останній матч у стані:", max(v["last_match"] for v in s
 EOF
 
 pkill -f "uvicorn src.api.main" 2>/dev/null || true
-sleep 1
+for _ in $(seq 1 15); do ss -ltn | grep -q ':8000 ' || break; sleep 1; done
 nohup uvicorn src.api.main:app --port 8000 > uvicorn.log 2>&1 &
 for _ in $(seq 1 60); do
   curl -sf http://127.0.0.1:8000/api/v1/health > /dev/null && break
@@ -23,7 +23,7 @@ for _ in $(seq 1 60); do
 done
 curl -sf http://127.0.0.1:8000/api/v1/health > /dev/null || { echo "❌ Бекенд не стартував, дивіться uvicorn.log"; exit 1; }
 
-python -m src.live.log_predictions
+python -m src.live.log_predictions --refresh
 
 python - << 'EOF'
 import json, os

@@ -1,6 +1,7 @@
 """Журнал живих прогнозів: фіксуємо прогноз ДО початку матчу (час запису зберігається).
   python -m src.live.log_predictions              # найближчий тур
   python -m src.live.log_predictions --rounds 2   # і наступний
+  python -m src.live.log_predictions --refresh    # перелогувати матчі, що ще не почались (старі версії зберігаються)
 Потрібен запущений бекенд (uvicorn на порту 8000)."""
 from __future__ import annotations
 
@@ -18,6 +19,7 @@ from src.features.shin_odds import shin_de_margin
 
 API = "http://127.0.0.1:8000/api/v1"
 LOG = Path("data/live/predictions.jsonl")
+SUPERSEDED = Path("data/live/predictions_superseded.jsonl")
 ODDS_URL = "https://www.football-data.co.uk/fixtures.csv"   # якщо адреса змінилась: логуватимемо без коефіцієнтів
 
 
@@ -39,6 +41,7 @@ def fetch_odds() -> dict[tuple[str, str], list[float]]:
             continue
         if all(pd.notna(v) for v in p):
             out[(r["HomeTeam"], r["AwayTeam"])] = [float(v) for v in p]
+    print(f"Коефіцієнтів букмекерів знайдено: {len(out)}")
     return out
 
 
@@ -51,8 +54,33 @@ def model_stamp() -> str:
     return f"{commit}|{';'.join(parts)}"
 
 
-def main(rounds: int) -> None:
+def archive_future(now: datetime) -> None:
+    """Прибирає з журналу прогнози матчів, що ще не почались (їх буде перелогувано). Старі версії йдуть в архів."""
+    if not LOG.exists():
+        return
+    keep, moved = [], []
+    for line in LOG.read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        kick = datetime.fromisoformat(json.loads(line)["kickoff"].replace("Z", "+00:00"))
+        (keep if kick <= now else moved).append(line)
+    if moved:
+        with SUPERSEDED.open("a", encoding="utf-8") as fh:
+            fh.write("\n".join(moved) + "\n")
+        LOG.write_text("\n".join(keep) + ("\n" if keep else ""), encoding="utf-8")
+        print(f"♻️  Замінюю {len(moved)} прогнозів матчів, що ще не почались (старі в {SUPERSEDED.name})")
+
+
+def main(rounds: int, refresh: bool = False) -> None:
     LOG.parent.mkdir(parents=True, exist_ok=True)
+    now = datetime.now(timezone.utc)
+    try:
+        requests.get(f"{API}/health", timeout=5).raise_for_status()
+    except Exception:
+        raise SystemExit("❌ Бекенд не відповідає на :8000. Спершу запустіть uvicorn (термінал A).")
+    if refresh:
+        archive_future(now)
+
     seen = set()
     if LOG.exists():
         for line in LOG.read_text(encoding="utf-8").splitlines():
@@ -60,7 +88,7 @@ def main(rounds: int) -> None:
                 d = json.loads(line)
                 seen.add((d["home"], d["away"], d["season"]))
 
-    odds, now, stamp = fetch_odds(), datetime.now(timezone.utc), model_stamp()
+    odds, stamp = fetch_odds(), model_stamp()
     event, new = None, 0
     for _ in range(rounds):
         url = f"{API}/fixtures/next" if event is None else f"{API}/fixtures/round/{event}"
@@ -103,4 +131,6 @@ def main(rounds: int) -> None:
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--rounds", type=int, default=1)
-    main(ap.parse_args().rounds)
+    ap.add_argument("--refresh", action="store_true", help="перелогувати матчі, що ще не почались")
+    args = ap.parse_args()
+    main(args.rounds, args.refresh)
