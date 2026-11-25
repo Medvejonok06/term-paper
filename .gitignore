@@ -11,3 +11,5 @@ nohup.out
 .env
 models_frozen/
 uvicorn.log
+catboost_info/
+check_report.txt
